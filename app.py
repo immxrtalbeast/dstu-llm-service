@@ -1,39 +1,31 @@
+# app.py
+
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from uuid import UUID
-from models.chat import ChatRequest, ChatResponse
-from models.test import (
-    GenerateTestRequest, GenerateTestResponse,
-    EvaluateTestRequest, EvaluateTestResponse
+from models.test_workflow import (
+    TestWorkflowRequest, TestWorkflowResponse
 )
-from services.chat_service import handle_chat
-from services.test_service import (
-    generate_test, evaluate_test
-)
+from graph.graph import engine
 
-app = FastAPI(title="LLM Service")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app = FastAPI(title="Test Workflow Service")
 
-@app.post("/api/chat", response_model=ChatResponse)
-async def api_chat(req: ChatRequest):
+@app.post("/api/test-workflow", response_model=TestWorkflowResponse)
+def run_test_workflow(req: TestWorkflowRequest):
+    # 1) инициализируем начальное состояние
+    state = {"text": req.text}
+
+    # 2) запускаем синхронный invoke (наши узлы — sync)
     try:
-        return await handle_chat(req)
+        result = engine.invoke(state)
     except Exception as e:
+        # если что-то пошло не так — покажем в detail
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/generate-test", response_model=GenerateTestResponse)
-async def api_generate_test(req: GenerateTestRequest):
-    return await generate_test(req)
-
-@app.post("/api/evaluate-test", response_model=EvaluateTestResponse)
-async def api_evaluate_test(req: EvaluateTestRequest):
-    return await evaluate_test(req)
+    # 3) вернём готовую структуру
+    return TestWorkflowResponse(**{
+        "test": result["test"],
+        "answers": result["answers"]
+    })
 
 @app.get("/api/health")
-async def health():
+def health():
     return {"status": "ok"}

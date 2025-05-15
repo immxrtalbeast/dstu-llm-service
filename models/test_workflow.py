@@ -12,11 +12,12 @@ class Question(BaseModel):
     options: List[Option]  = Field(..., description="Список вариантов")
 
 class TestData(BaseModel):
+    title: str = Field(..., description="Название темы")
     questions: List[Question] = Field(..., description="Список вопросов")
 
 class TestWorkflowRequest(BaseModel):
     text: str = Field(..., description="‘topic. difficulty.’, напр. ‘OOP. Hard.’")
 
 class TestWorkflowResponse(BaseModel):
-    test: TestData        = Field(..., description="Распарсенная JSON‑структура теста")
-    answers: List[str]    = Field(..., description="Список букв‑ответов, напр. ['A','C',…]")
+    test: List[TestData]        = Field(..., description="Распарсенная JSON‑структура теста")
+    # answers: List[str]    = Field(..., description="Список букв‑ответов, напр. ['A','C',…]")
